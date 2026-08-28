@@ -20,6 +20,23 @@ pipeline {
                 sh './mvnw test'
             }
         }
+	stage('Deploy to Tomcat') {
+	    steps {
+                sh '''
+                    cp target/*.war /opt/deploy/springboot-app.war
+                    sudo cp /opt/deploy/springboot-app.war /opt/tomcat/webapps/springboot-app.war
+                    sudo systemctl restart tomcat
+                '''
+		}
+	}
+	stage('Verify Deployment') {
+	    steps {
+	       sh '''
+        	sleep 10
+        	curl -f http://localhost:8081/springboot-app/
+        	'''
+		}
+	}
 
         stage('Package') {
             steps {
@@ -28,4 +45,6 @@ pipeline {
             }
         }
     }
+
 }
+
