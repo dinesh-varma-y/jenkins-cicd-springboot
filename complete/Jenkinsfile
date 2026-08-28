@@ -11,40 +11,53 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh './mvnw clean package -DskipTests'
+                dir('complete') {
+                    sh './mvnw clean package -DskipTests'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh './mvnw test'
+                dir('complete') {
+                    sh './mvnw test'
+                }
             }
         }
-	stage('Deploy to Tomcat') {
-	    steps {
-                sh '''
-                    cp target/*.war /opt/deploy/springboot-app.war
-                    sudo cp /opt/deploy/springboot-app.war /opt/tomcat/webapps/springboot-app.war
-                    sudo systemctl restart tomcat
-                '''
-		}
-	}
-	stage('Verify Deployment') {
-	    steps {
-	       sh '''
-        	sleep 10
-        	curl -f http://localhost:8081/springboot-app/
-        	'''
-		}
-	}
 
         stage('Package') {
             steps {
-                archiveArtifacts artifacts: 'target/*.war',
-                         fingerprint: true
+                archiveArtifacts artifacts: 'complete/target/*.war',
+                    fingerprint: true
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sh '''
+                    cp complete/target/*.war /opt/deploy/springboot-app.war
+                    sudo cp /opt/deploy/springboot-app.war /opt/tomcat/webapps/springboot-app.war
+                    sudo systemctl restart tomcat
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    sleep 10
+                    curl -f http://localhost:8081/springboot-app/
+                '''
             }
         }
     }
 
+    post {
+        success {
+            echo 'CI/CD pipeline completed successfully.'
+        }
+        failure {
+            echo 'CI/CD pipeline failed.'
+        }
+    }
 }
-
